@@ -1,0 +1,45 @@
+---
+title: '2.3'
+author: "Vaishnavi"
+date: "2023-09-16"
+output:
+  word_document: default
+  html_document: default
+---
+```{r}
+library(data.table)
+yacht_dataset = fread("https://archive.ics.uci.edu/ml/machine-learning-databases/00243/yacht_hydrodynamics.data")
+names(yacht_dataset) = c("lcg","pr","LDR","BDR","LBR","frNo","Re")
+```
+
+
+```{r}
+library(caret)
+split = createDataPartition(y = yacht_dataset$Re , p = 0.8, list = FALSE)
+train_set = yacht_dataset[split,]
+test_set = yacht_dataset[-split,]
+
+linear_model = lm(Re ~., data = train_set)
+
+summary(linear_model)
+```
+
+
+```{r}
+cat("Train data of MSE = ", anova(linear_model)['Residuals', 'Mean Sq'])
+cat("\nTrain data of RMSE = ", sqrt(anova(linear_model)['Residuals', 'Mean Sq']))
+cat("\nTrain data of R-squared = ",summary(linear_model)$r.sq)
+```
+
+
+
+```{r}
+train_boot =  trainControl(method = "boot", number = 1000)
+batch_lm = train(Re~., data = train_set, method = "lm" ) 
+summary(batch_lm$resample$RMSE)
+summary(batch_lm$resample$Rsquared)
+hist(batch_lm$resample$RMSE, xlab = "RMSE", main = "Histogram of RMSE")
+```
+
+
+

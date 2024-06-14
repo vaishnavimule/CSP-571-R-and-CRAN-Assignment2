@@ -1,0 +1,74 @@
+---
+title: '2.1'
+author: "Vaishnavi"
+date: "2023-09-16"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+## Load dataset
+```{r}
+abalone_dataset = read.csv("http://archive.ics.uci.edu/ml/machine-learning-databases/abalone/abalone.data")
+names(abalone_dataset) = c("sex", "length", "diameter", "height", "weight_whole", "weight_shucked", "weight_viscera", "weight_shell", "rings")
+```
+
+## Drop all rows where sex = Infant
+```{r}
+abalone_dataset = subset(abalone_dataset, sex != "I")
+abalone_dataset$sex = as.factor(ifelse(abalone_dataset$sex == "M", "1", "0"))
+```
+
+## Split data to training set and testing set
+```{r}
+library(caret)
+split_80 = createDataPartition(abalone_dataset$sex, p=0.8, list=FALSE)
+
+train<-abalone_dataset[split_80,]
+test<-abalone_dataset[-split_80,]
+
+```
+
+
+## Fitting logistic regression using glm function
+```{r}
+logistic_r = glm(sex ~ ., train, family = binomial)
+summary(logistic_r)
+confint(logistic_r)
+```
+
+
+## From above results we observe that the predictors are not doing a good job! as the coefficient values are close to 0 or very low. the value of rings is also close to 0.
+
+## The CI for rings contains 0 so we cannot abandon the NULL hypothesis 
+```{r}
+y_hat = predict(logistic_r, test, type = "response")
+y_hat = ifelse(y_hat > 0.5, 1, 0)
+```
+
+
+```{r}
+confusionMatrix(table(as.factor(y_hat),as.factor(test$sex)))
+```
+
+
+
+## The accuracy of this model is 55.12%
+```{r}
+library(ROCR)
+pred = prediction(y_hat, test$sex)
+perf <- performance(pred, "tpr", "fpr")
+plot(perf, main = "ROC curve for Logistic Regression Model")
+abline(0, 1)
+```
+
+
+## The graph has high rate of area under the curve 
+```{r}
+library(corrplot)
+corrplot(cor(train[, -1]), method="color")
+```
+
+
+
+## The correlation between the attributes/predictors is pretty good from the above grid, hence the model's accuracy is most likely influenced by these attributes/predictors.

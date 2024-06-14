@@ -1,0 +1,70 @@
+---
+title: '2.4'
+author: "Vaishnavi"
+date: "2023-09-16"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r}
+library(data.table)
+df = fread("https://archive.ics.uci.edu/ml/machine-learning-databases/statlog/german/german.data-numeric")
+```
+
+
+```{r}
+library(caret)
+df$V25 = factor(df$V25)
+split = createDataPartition(df$V25 , p = 0.8, list = FALSE)
+train_set = df[split,]
+test_set = df[-split,]
+
+lg_r = glm(V25~., data = train_set, family=binomial)
+summary(lg_r)
+```
+
+
+```{r}
+fitted = ifelse(lg_r$fitted.values > 0.5,2,1)
+fitted = factor(fitted)
+cm = confusionMatrix(fitted, train_set$V25)
+
+cat("Precision =", cm$byClass[5] * 100, "%\n")
+cat("Recall =", cm$byClass[6] * 100, "%\n")
+cat("F1Score =", cm$byClass[7] * 100, "%\n")
+```
+
+
+
+```{r}
+train_control =  trainControl(method = "cv", number = 10)
+lg_r2 = train(V25~., data = train_set, family = "binomial", tr = train_control)
+
+temp  = lg_r2$finalModel$predicted
+
+cm2=confusionMatrix(temp, train_set$V25)
+
+```
+
+
+```{r}
+cat("Cross fold Precision = ", cm2$byClass[5] * 100, "%\n")
+cat("cross fold Recall  ", cm2$byClass[6] * 100, "%\n")
+cat("cross fold F1Score  ", cm2$byClass[7] * 100, "%\n")
+```
+
+
+
+## original data
+
+```{r}
+gc_test_pred = predict(lg_r, test_set, type = "response")
+gc_test_fitval = ifelse(gc_test_pred > 0.5,2,1)
+gc_test_fitval = factor(gc_test_fitval)
+```
+
+
+

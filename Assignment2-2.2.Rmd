@@ -1,0 +1,68 @@
+---
+title: '2.2'
+author: "Vaishnavi"
+date: "2023-09-16"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r}
+mushroom_dataset = read.csv(file="https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data")
+names(mushroom_dataset) = c("class","cap_shape","cap_surface","cap_color","bruises","odor","gill_attachment","gill_spacing","gill_size","gill_color","stalk_shape","stalk_root","stalk_surface_above_ring","stalk_surface_below_ring","stalk_color_above_ring","stalk_color_below_ring","veil_type","veil_color","ring_number","ring_type","spore_print_color","population","habitat")
+```
+
+
+```{r}
+str(mushroom_dataset)
+```
+
+
+```{r}
+library(tidyverse)
+mushroom_dataset %>% gather(col_name, value, 1:23) %>% group_by(col_name)%>%tally(value == '?')
+```
+
+
+
+## The stalk_root column has 30% of the values as '?' hence we can drop those values and yet it wouldn't effect the entire data much!
+
+```{r}
+mushroom_dataset = mushroom_dataset[mushroom_dataset$stalk_root !='?',]
+head(mushroom_dataset)
+```
+
+
+```{r}
+library(e1071)
+library(caret)
+split = createDataPartition(mushroom_dataset$class, p = 0.80, list=FALSE)
+train_data = mushroom_dataset[split,]
+test_data = mushroom_dataset[-split,]
+```
+
+
+```{r}
+nb_model= naiveBayes(train_data[,-1], train_data$class)
+summary(nb_model)
+```
+
+
+```{r}
+train_pred = predict(nb_model,train_data[,-1])
+test_pred = predict(nb_model,test_data[,-1])
+```
+
+
+```{r}
+cat("Testing Model Accuracy: ",mean(test_pred == test_data$class)*100,"% \n")
+cat("Training Model Accuracy: ",mean(train_pred == train_data$class)*100,"%")
+```
+
+
+```{r}
+table(test_pred, test_data$class)
+```
+
+
+## False positives are 44
